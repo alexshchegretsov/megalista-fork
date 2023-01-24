@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-class OAuthCredentials():
+class OAuthCredentials:
     def __init__(self, client_id, client_secret, access_token, refresh_token):
         self.client_id = client_id
         self.client_secret = client_secret

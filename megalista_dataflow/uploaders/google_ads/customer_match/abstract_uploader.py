@@ -26,13 +26,16 @@ from uploaders import utils
 from uploaders.google_ads import ADS_API_VERSION
 from uploaders.uploaders import MegalistaUploader
 
-_DEFAULT_LOGGER: str = 'megalista.GoogleAdsCustomerMatchAbstractUploader'
+_DEFAULT_LOGGER: str = "megalista.GoogleAdsCustomerMatchAbstractUploader"
 
 
 class GoogleAdsCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
-
-    def __init__(self, oauth_credentials: OAuthCredentials, developer_token: StaticValueProvider,
-                 error_handler: ErrorHandler):
+    def __init__(
+        self,
+        oauth_credentials: OAuthCredentials,
+        developer_token: StaticValueProvider,
+        error_handler: ErrorHandler,
+    ):
         super().__init__(error_handler)
         self.oauth_credentials = oauth_credentials
         self.developer_token = developer_token
@@ -47,68 +50,85 @@ class GoogleAdsCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
 
     def finish_bundle(self):
         for job_definition in self._job_cache.values():
-            logging.getLogger(_DEFAULT_LOGGER).info(f"Running job {job_definition['job_resource_name']}")
-            self._get_offline_user_data_job_service(job_definition['login_customer_id']).run_offline_user_data_job(
-                resource_name=job_definition['job_resource_name'])
-        # Since these jobs have been sent, we can safely remove them from cache 
+            logging.getLogger(_DEFAULT_LOGGER).info(
+                f"Running job {job_definition['job_resource_name']}"
+            )
+            self._get_offline_user_data_job_service(
+                job_definition["login_customer_id"]
+            ).run_offline_user_data_job(
+                resource_name=job_definition["job_resource_name"]
+            )
+        # Since these jobs have been sent, we can safely remove them from cache
         self._job_cache = {}
         super().finish_bundle()
 
-    def _create_list_if_it_does_not_exist(self,
-                                          customer_id: str,
-                                          login_customer_id: str,
-                                          list_name: str,
-                                          list_definition: Dict[str, Any]) -> str:
+    def _create_list_if_it_does_not_exist(
+        self,
+        customer_id: str,
+        login_customer_id: str,
+        list_name: str,
+        list_definition: Dict[str, Any],
+    ) -> str:
 
         # To avoid list name collision with different customer_ids, lets add the customer_id to the cache key
         list_key = f"{list_name}-{customer_id}"
         if self._user_list_id_cache.get(list_key) is None:
-            self._user_list_id_cache[list_key] = \
-                self._do_create_list_if_it_does_not_exist(
-                    customer_id, login_customer_id, list_name, list_definition)
+            self._user_list_id_cache[
+                list_key
+            ] = self._do_create_list_if_it_does_not_exist(
+                customer_id, login_customer_id, list_name, list_definition
+            )
 
         return self._user_list_id_cache[list_key]
 
-    def _do_create_list_if_it_does_not_exist(self,
-                                             customer_id: str,
-                                             login_customer_id: str,
-                                             list_name: str,
-                                             list_definition: Dict[str, Any]
-                                             ) -> str:
+    def _do_create_list_if_it_does_not_exist(
+        self,
+        customer_id: str,
+        login_customer_id: str,
+        list_name: str,
+        list_definition: Dict[str, Any],
+    ) -> str:
 
-        resource_name = self._get_user_list_resource_name(customer_id, login_customer_id, list_name)
+        resource_name = self._get_user_list_resource_name(
+            customer_id, login_customer_id, list_name
+        )
 
         if resource_name is None:
             # Create list
             logging.getLogger(_DEFAULT_LOGGER).info(
-                '%s list does not exist, creating...', list_name)
+                "%s list does not exist, creating...", list_name
+            )
             request = {
-                'customer_id': customer_id,
-                'partial_failure': False,
-                'validate_only': False,
-                'operations': [{
-                    'create': list_definition
-                }]
+                "customer_id": customer_id,
+                "partial_failure": False,
+                "validate_only": False,
+                "operations": [{"create": list_definition}],
             }
 
             user_list_service = self._get_user_list_service(login_customer_id)
             user_list_service_response = user_list_service.mutate_user_lists(request)
             for result in user_list_service_response.results:
                 resource_name = result.resource_name
-            logging.getLogger(_DEFAULT_LOGGER).info('List %s created with resource name: %s',
-                                                    list_name, resource_name)
+            logging.getLogger(_DEFAULT_LOGGER).info(
+                "List %s created with resource name: %s", list_name, resource_name
+            )
         else:
-            logging.getLogger(_DEFAULT_LOGGER).info('List %s found with resource name: %s',
-                                                    list_name, resource_name)
+            logging.getLogger(_DEFAULT_LOGGER).info(
+                "List %s found with resource name: %s", list_name, resource_name
+            )
         return str(resource_name)
 
-    def _get_user_list_resource_name(self, customer_id: str, login_customer_id: str, list_name: str) -> Optional[str]:
+    def _get_user_list_resource_name(
+        self, customer_id: str, login_customer_id: str, list_name: str
+    ) -> Optional[str]:
         resource_name = None
         service = self._get_ads_service(login_customer_id)
 
         # Only search for audiences owned by this account, not MCCs above it.
-        query = f"SELECT user_list.resource_name, user_list.access_reason FROM user_list WHERE user_list.name='{list_name}' " \
-                f"AND user_list.access_reason='OWNED'"
+        query = (
+            f"SELECT user_list.resource_name, user_list.access_reason FROM user_list WHERE user_list.name='{list_name}' "
+            f"AND user_list.access_reason='OWNED'"
+        )
         response_query = service.search_stream(customer_id=customer_id, query=query)
         for batch in response_query:
             for row in batch.results:
@@ -117,142 +137,196 @@ class GoogleAdsCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
 
     # just to facilitate mocking
     def _get_ads_service(self, customer_id: str):
-        return utils.get_ads_service('GoogleAdsService', ADS_API_VERSION,
-                                     self.oauth_credentials,
-                                     self.developer_token.get(),
-                                     customer_id)
+        return utils.get_ads_service(
+            "GoogleAdsService",
+            ADS_API_VERSION,
+            self.oauth_credentials,
+            self.developer_token.get(),
+            customer_id,
+        )
 
     def _get_user_list_service(self, customer_id: str):
-        return utils.get_ads_service('UserListService', ADS_API_VERSION,
-                                     self.oauth_credentials,
-                                     self.developer_token.get(),
-                                     customer_id)
+        return utils.get_ads_service(
+            "UserListService",
+            ADS_API_VERSION,
+            self.oauth_credentials,
+            self.developer_token.get(),
+            customer_id,
+        )
 
     def _get_offline_user_data_job_service(self, customer_id: str):
-        return utils.get_ads_service('OfflineUserDataJobService', ADS_API_VERSION,
-                                     self.oauth_credentials,
-                                     self.developer_token.get(),
-                                     customer_id)
+        return utils.get_ads_service(
+            "OfflineUserDataJobService",
+            ADS_API_VERSION,
+            self.oauth_credentials,
+            self.developer_token.get(),
+            customer_id,
+        )
 
     def _assert_execution_is_valid(self, execution) -> None:
         destination = execution.destination.destination_metadata
 
         # The number of parameters vary by upload. This test could be parameterized
         if not destination[0]:
-            raise ValueError('Missing destination information. Received {}'.format(
-                str(destination)))
+            raise ValueError(
+                "Missing destination information. Received {}".format(str(destination))
+            )
 
-    def _get_customer_id(self, account_config: AccountConfig, destination: Destination) -> str:
+    def _get_customer_id(
+        self, account_config: AccountConfig, destination: Destination
+    ) -> str:
         """
-          If the customer_id is present on the destination, returns it, otherwise defaults to the account_config info.
+        If the customer_id is present on the destination, returns it, otherwise defaults to the account_config info.
         """
-        if len(destination.destination_metadata) >= 5 and len(destination.destination_metadata[4]) > 0:
-            return destination.destination_metadata[4].replace('-', '')
-        return account_config.google_ads_account_id.replace('-', '')
+        if (
+            len(destination.destination_metadata) >= 5
+            and len(destination.destination_metadata[4]) > 0
+        ):
+            return destination.destination_metadata[4].replace("-", "")
+        return account_config.google_ads_account_id.replace("-", "")
 
-    def _get_login_customer_id(self, account_config: AccountConfig, destination: Destination) -> str:
+    def _get_login_customer_id(
+        self, account_config: AccountConfig, destination: Destination
+    ) -> str:
         """
-          If the customer_id in account_config is a mcc, then login with the mcc account id, otherwise use the customer id.
+        If the customer_id in account_config is a mcc, then login with the mcc account id, otherwise use the customer id.
         """
         if account_config._mcc:
-            return account_config.google_ads_account_id.replace('-', '')
-        
+            return account_config.google_ads_account_id.replace("-", "")
+
         return self._get_customer_id(account_config, destination)
 
-    def _get_job_by_list_name(self, offline_user_data_job_service, list_resource_name: str, operator: str,
-                              customer_id: str, login_customer_id: str) -> str:
+    def _get_job_by_list_name(
+        self,
+        offline_user_data_job_service,
+        list_resource_name: str,
+        operator: str,
+        customer_id: str,
+        login_customer_id: str,
+    ) -> str:
         cache_key = f"{list_resource_name}:{operator}"
 
         if cache_key in self._job_cache:
-            return self._job_cache[cache_key]['job_resource_name']
+            return self._job_cache[cache_key]["job_resource_name"]
 
         job_creation_payload = {
-            'type_': 'CUSTOMER_MATCH_USER_LIST',
-            'customer_match_user_list_metadata': {
-                'user_list': list_resource_name
-            }
+            "type_": "CUSTOMER_MATCH_USER_LIST",
+            "customer_match_user_list_metadata": {"user_list": list_resource_name},
         }
 
-        job_resource_name = offline_user_data_job_service.create_offline_user_data_job(customer_id=customer_id,
-                                                                                       job=job_creation_payload).resource_name
-        self._job_cache[cache_key] = {'job_resource_name': job_resource_name, 'login_customer_id': login_customer_id}
+        job_resource_name = offline_user_data_job_service.create_offline_user_data_job(
+            customer_id=customer_id, job=job_creation_payload
+        ).resource_name
+        self._job_cache[cache_key] = {
+            "job_resource_name": job_resource_name,
+            "login_customer_id": login_customer_id,
+        }
 
         return str(job_resource_name)
 
     def _get_list_operator(self, operator: str) -> str:
-        translation = {
-            'ADD': 'create',
-            'REMOVE': 'remove',
-            'REPLACE': 'create'
-        }
+        translation = {"ADD": "create", "REMOVE": "remove", "REPLACE": "create"}
         return translation[operator]
 
     def _get_remove_all(self, operator: str) -> bool:
-        return operator == 'REPLACE'
+        return operator == "REPLACE"
 
-    def get_filtered_rows(self, rows: List[Any], keys: List[str]) -> List[Dict[str, Any]]:
+    def get_filtered_rows(
+        self, rows: List[Any], keys: List[str]
+    ) -> List[Dict[str, Any]]:
         return [{key: row.get(key) for key in keys if key in row} for row in rows]
 
     @utils.safe_process(logger=logging.getLogger(_DEFAULT_LOGGER))
     def process(self, batch: Batch, **kwargs):
         if not self.active:
             logging.getLogger(_DEFAULT_LOGGER).info(
-                'Skipping upload to ads, parameters not configured.')
+                "Skipping upload to ads, parameters not configured."
+            )
             return
 
         execution = batch.execution
 
         self._assert_execution_is_valid(execution)
 
-        customer_id = self._get_customer_id(execution.account_config, execution.destination)
-        login_customer_id = self._get_login_customer_id(execution.account_config, execution.destination)
+        customer_id = self._get_customer_id(
+            execution.account_config, execution.destination
+        )
+        login_customer_id = self._get_login_customer_id(
+            execution.account_config, execution.destination
+        )
 
         # get API services
-        offline_user_data_job_service = self._get_offline_user_data_job_service(login_customer_id)
+        offline_user_data_job_service = self._get_offline_user_data_job_service(
+            login_customer_id
+        )
 
         list_resource_name = self._create_list_if_it_does_not_exist(
-            customer_id, login_customer_id, execution.destination.destination_metadata[0],
+            customer_id,
+            login_customer_id,
+            execution.destination.destination_metadata[0],
             self.get_list_definition(
-                execution.account_config,
-                execution.destination.destination_metadata))
+                execution.account_config, execution.destination.destination_metadata
+            ),
+        )
 
-        operator = self._get_list_operator(execution.destination.destination_metadata[1])
-        job_resource_name = self._get_job_by_list_name(offline_user_data_job_service, list_resource_name, operator,
-                                                       customer_id, login_customer_id)
+        operator = self._get_list_operator(
+            execution.destination.destination_metadata[1]
+        )
+        job_resource_name = self._get_job_by_list_name(
+            offline_user_data_job_service,
+            list_resource_name,
+            operator,
+            customer_id,
+            login_customer_id,
+        )
 
         rows = self.get_filtered_rows(batch.elements, self.get_row_keys())
 
         operations: List[Dict[str, Union[bool, Dict[str, Any]]]] = []
         # Only removes all at the first interation. Otherwise, skip it
-        if (self._get_remove_all(execution.destination.destination_metadata[1]) and batch.iteration == 1):
-            operations.append({
-                'remove_all': True
-            })
+        if (
+            self._get_remove_all(execution.destination.destination_metadata[1])
+            and batch.iteration == 1
+        ):
+            operations.append({"remove_all": True})
 
         for row in rows:
-            operations.extend([
-                {
-                    operator: {'user_identifiers': [{user_identifier: row[user_identifier]}]}
-                } for user_identifier in row])
+            operations.extend(
+                [
+                    {
+                        operator: {
+                            "user_identifiers": [
+                                {user_identifier: row[user_identifier]}
+                            ]
+                        }
+                    }
+                    for user_identifier in row
+                ]
+            )
 
         data_insertion_payload = {
-            'resource_name': job_resource_name,
-            'enable_partial_failure': True,
-            'operations': operations
+            "resource_name": job_resource_name,
+            "enable_partial_failure": True,
+            "operations": operations,
         }
 
-        data_insertion_response = offline_user_data_job_service.add_offline_user_data_job_operations(
-            request=data_insertion_payload)
+        data_insertion_response = (
+            offline_user_data_job_service.add_offline_user_data_job_operations(
+                request=data_insertion_payload
+            )
+        )
 
-        error_message = utils.print_partial_error_messages(_DEFAULT_LOGGER, 'uploading customer match',
-                                                           data_insertion_response)
+        error_message = utils.print_partial_error_messages(
+            _DEFAULT_LOGGER, "uploading customer match", data_insertion_response
+        )
         if error_message:
             self._add_error(execution, error_message)
 
         return [execution]
 
-    def get_list_definition(self, account_config: AccountConfig,
-                            destination_metadata: List[str]) -> Dict[str, Any]:
+    def get_list_definition(
+        self, account_config: AccountConfig, destination_metadata: List[str]
+    ) -> Dict[str, Any]:
         pass
 
     def get_row_keys(self) -> List[str]:

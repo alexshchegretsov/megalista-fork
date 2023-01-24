@@ -42,10 +42,14 @@ class GoogleAnalyticsDataImportEraser(MegalistaUploader):
             refresh_token=self.oauth_credentials.get_refresh_token(),
             client_id=self.oauth_credentials.get_client_id(),
             client_secret=self.oauth_credentials.get_client_secret(),
-            token_uri='https://accounts.google.com/o/oauth2/token',
-            scopes=["https://www.googleapis.com/auth/analytics.edit", 'https://www.googleapis.com/auth/adwords'])
+            token_uri="https://accounts.google.com/o/oauth2/token",
+            scopes=[
+                "https://www.googleapis.com/auth/analytics.edit",
+                "https://www.googleapis.com/auth/adwords",
+            ],
+        )
 
-        return build('analytics', 'v3', credentials=credentials)
+        return build("analytics", "v3", credentials=credentials)
 
     def start_bundle(self):
         pass
@@ -54,13 +58,18 @@ class GoogleAnalyticsDataImportEraser(MegalistaUploader):
     def _assert_all_list_names_are_present(any_execution):
         destination = any_execution.destination.destination_metadata
         if len(destination) < 2:
-            raise ValueError('Missing destination information. Found {}'.format(len(destination)))
+            raise ValueError(
+                "Missing destination information. Found {}".format(len(destination))
+            )
 
         if not destination[0] or not destination[1]:
-            raise ValueError('Missing destination information. Received {}'.format(str(destination)))
+            raise ValueError(
+                "Missing destination information. Received {}".format(str(destination))
+            )
 
     @utils.safe_process(
-        logger=logging.getLogger('megalista.GoogleAnalyticsDataImportUploader'))
+        logger=logging.getLogger("megalista.GoogleAnalyticsDataImportUploader")
+    )
     def process(self, batch: Batch, **kwargs):
         execution = batch.execution
         self._assert_all_list_names_are_present(execution)
@@ -74,52 +83,80 @@ class GoogleAnalyticsDataImportEraser(MegalistaUploader):
         data_import_name = metadata[1]
 
         analytics = self._get_analytics_service()
-        data_sources = analytics.management().customDataSources().list(
-            accountId=ga_account_id, webPropertyId=web_property_id).execute()['items']
+        data_sources = (
+            analytics.management()
+            .customDataSources()
+            .list(accountId=ga_account_id, webPropertyId=web_property_id)
+            .execute()["items"]
+        )
         data_source_results = list(
-            filter(lambda data_source: data_source['name'] == data_import_name, data_sources))
+            filter(
+                lambda data_source: data_source["name"] == data_import_name,
+                data_sources,
+            )
+        )
 
         if len(data_source_results) == 1:
-            data_source_id = data_source_results[0]['id']
+            data_source_id = data_source_results[0]["id"]
             try:
-                self._call_delete_api(analytics, data_import_name, ga_account_id, data_source_id, web_property_id)
+                self._call_delete_api(
+                    analytics,
+                    data_import_name,
+                    ga_account_id,
+                    data_source_id,
+                    web_property_id,
+                )
                 return [batch]
             except Exception as e:
-                error_message = f'Error while delete GA Data Import files: {e}'
-                logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").error(error_message)
+                error_message = f"Error while delete GA Data Import files: {e}"
+                logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").error(
+                    error_message
+                )
                 self._add_error(execution, error_message)
         else:
             error_message = f"{data_import_name} - data import not found, please configure it in Google Analytics"
-            logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").error(error_message)
+            logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").error(
+                error_message
+            )
             self._add_error(execution, error_message)
 
     @staticmethod
-    def _call_delete_api(analytics, data_import_name, ga_account_id, data_source_id, web_property_id):
+    def _call_delete_api(
+        analytics, data_import_name, ga_account_id, data_source_id, web_property_id
+    ):
         logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").info(
-            "Listing files from %s - %s" % (data_import_name, data_source_id))
+            "Listing files from %s - %s" % (data_import_name, data_source_id)
+        )
 
-        uploads = analytics.management().uploads().list(
-            accountId=ga_account_id,
-            webPropertyId=web_property_id,
-            customDataSourceId=data_source_id
-        ).execute()
+        uploads = (
+            analytics.management()
+            .uploads()
+            .list(
+                accountId=ga_account_id,
+                webPropertyId=web_property_id,
+                customDataSourceId=data_source_id,
+            )
+            .execute()
+        )
 
-        file_ids = [upload.get('id') for upload in uploads.get('items', [])]
+        file_ids = [upload.get("id") for upload in uploads.get("items", [])]
         if len(file_ids) == 0:
             logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").error(
-                "Data Source %s had no files to delete" % data_import_name)
+                "Data Source %s had no files to delete" % data_import_name
+            )
 
         else:
             logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").info(
-                "File Ids: %s" % file_ids)
+                "File Ids: %s" % file_ids
+            )
 
             logging.getLogger("megalista.GoogleAnalyticsDataImportUploader").info(
-                "Deleting %s files from %s - %s" % (len(file_ids), data_import_name, data_source_id))
+                "Deleting %s files from %s - %s"
+                % (len(file_ids), data_import_name, data_source_id)
+            )
             analytics.management().uploads().deleteUploadData(
                 accountId=ga_account_id,
                 webPropertyId=web_property_id,
                 customDataSourceId=data_source_id,
-                body={
-                    'customDataImportUids': file_ids
-                }
+                body={"customDataImportUids": file_ids},
             ).execute()

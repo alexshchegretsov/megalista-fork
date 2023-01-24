@@ -17,6 +17,7 @@ from models.execution import DestinationType
 from io import StringIO
 import pandas as pd
 
+
 def test_update_data_types_not_string(mocker):
     csv = "uuid,gclid,mobileDeviceId,\
 encryptedUserId,matchId,value,quantity,\
@@ -24,34 +25,35 @@ customVariables.type,customVariables.value\n\
 123,123,123,123,123,123,123,U1,123\n\
 123,123,123,123,123,123,123,U2,456"
     file = StringIO(csv)
-    df = pd.read_csv(file, dtype='string')
+    df = pd.read_csv(file, dtype="string")
 
     destination_type = DestinationType.CM_OFFLINE_CONVERSION
 
     df = DataSchemas.update_data_types_not_string(df, destination_type)
 
-    assert df.dtypes['uuid'] == 'string'
-    assert df.loc[0, 'uuid'] == '123'
-    assert df.dtypes['value'] == 'int64'
-    assert df.loc[0, 'value'] == 123
-    assert df.dtypes['quantity'] == 'int64'
-    assert df.loc[0, 'quantity'] == 123
+    assert df.dtypes["uuid"] == "string"
+    assert df.loc[0, "uuid"] == "123"
+    assert df.dtypes["value"] == "int64"
+    assert df.loc[0, "value"] == 123
+    assert df.dtypes["quantity"] == "int64"
+    assert df.loc[0, "quantity"] == 123
+
 
 def test_update_data_types_not_string_incomplete(mocker):
     csv = "uuid\n\
 123\n\
 123"
     file = StringIO(csv)
-    df = pd.read_csv(file, dtype='string')
+    df = pd.read_csv(file, dtype="string")
 
     destination_type = DestinationType.CM_OFFLINE_CONVERSION
 
     df = DataSchemas.update_data_types_not_string(df, destination_type)
 
-    assert df.dtypes['uuid'] == 'string'
-    assert df.loc[0, 'uuid'] == '123'
-    assert 'value' not in df.columns
-    assert 'quantity' not in df.columns
+    assert df.dtypes["uuid"] == "string"
+    assert df.loc[0, "uuid"] == "123"
+    assert "value" not in df.columns
+    assert "quantity" not in df.columns
 
 
 def test_process_by_destination_type(mocker):
@@ -61,35 +63,39 @@ customVariables.type,customVariables.value\n\
 123,123,123,123,123,123,123,U1,123\n\
 123,123,123,123,123,123,123,U2,456"
     file = StringIO(csv)
-    df = pd.read_csv(file, dtype='string')
+    df = pd.read_csv(file, dtype="string")
 
     destination_type = DestinationType.CM_OFFLINE_CONVERSION
 
     df = DataSchemas.process_by_destination_type(df, destination_type)
 
-    assert df.loc[0, 'customVariables'] == [{ "type": "U1", "value": "123" },{ "type": "U2", "value": "456" }]
+    assert df.loc[0, "customVariables"] == [
+        {"type": "U1", "value": "123"},
+        {"type": "U2", "value": "456"},
+    ]
 
 
 def test_validate_data_columns(mocker):
     destination_type = DestinationType.CM_OFFLINE_CONVERSION
-    cols_ok_1 = ['uuid', 'gclid']
-    cols_ok_2 = ['uuid', 'gclid', 'aaa']
-    cols_error_1 = ['uuid']
-    cols_error_2 = ['gclid']
+    cols_ok_1 = ["uuid", "gclid"]
+    cols_ok_2 = ["uuid", "gclid", "aaa"]
+    cols_error_1 = ["uuid"]
+    cols_error_2 = ["gclid"]
 
     assert DataSchemas.validate_data_columns(cols_ok_1, destination_type)
     assert DataSchemas.validate_data_columns(cols_ok_2, destination_type)
     assert DataSchemas.validate_data_columns(cols_error_1, destination_type) == False
     assert DataSchemas.validate_data_columns(cols_error_2, destination_type) == False
 
+
 def test_get_cols_names(mocker):
     destination_type = DestinationType.CM_OFFLINE_CONVERSION
-    cols_1 = ['uuid', 'gclid']
-    cols_1_filtered = ['uuid', 'gclid']
-    cols_2 = ['uuid', 'gclid', 'aaa']
-    cols_2_filtered = ['uuid', 'gclid']
-    cols_3 = ['uuid', 'dclid']
-    cols_3_filtered = ['uuid', 'dclid']
+    cols_1 = ["uuid", "gclid"]
+    cols_1_filtered = ["uuid", "gclid"]
+    cols_2 = ["uuid", "gclid", "aaa"]
+    cols_2_filtered = ["uuid", "gclid"]
+    cols_3 = ["uuid", "dclid"]
+    cols_3_filtered = ["uuid", "dclid"]
 
     assert DataSchemas.get_cols_names(cols_1, destination_type) == cols_1_filtered
     assert DataSchemas.get_cols_names(cols_2, destination_type) == cols_2_filtered

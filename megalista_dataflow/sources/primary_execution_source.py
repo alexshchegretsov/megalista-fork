@@ -28,56 +28,64 @@ from models.sheets_config import SheetsConfig
 from config.version import MEGALISTA_VERSION
 from config.logging import LoggingConfig
 
-class PrimaryExecutionSource(BaseBoundedSource):
-  """
-  Determines execution data based on provided JSON or Sheet information. Control
-  class needed since variables can't be accessed until runtime.
-  """
 
-  def __init__(self,
+class PrimaryExecutionSource(BaseBoundedSource):
+    """
+    Determines execution data based on provided JSON or Sheet information. Control
+    class needed since variables can't be accessed until runtime.
+    """
+
+    def __init__(
+        self,
         sheets_config: SheetsConfig,
         json_config: JsonConfig,
         setup_sheet_id: ValueProvider,
         setup_json_url: ValueProvider,
         setup_firestore_collection: ValueProvider,
-        show_code_lines_in_log: ValueProvider):
-    super().__init__()
-    self._setup_sheet_id = setup_sheet_id
-    self._setup_json_url = setup_json_url
-    self._setup_firestore_collection = setup_firestore_collection
-    self._sheets_execution_source = SpreadsheetExecutionSource(sheets_config,
-                                                               setup_sheet_id)
-    self._json_execution_source = JsonExecutionSource(json_config,
-                                                      setup_json_url)
-    self._firestore_execution_source = FirestoreExecutionSource(setup_firestore_collection)
-    self._show_code_lines_in_log = show_code_lines_in_log
+        show_code_lines_in_log: ValueProvider,
+    ):
+        super().__init__()
+        self._setup_sheet_id = setup_sheet_id
+        self._setup_json_url = setup_json_url
+        self._setup_firestore_collection = setup_firestore_collection
+        self._sheets_execution_source = SpreadsheetExecutionSource(
+            sheets_config, setup_sheet_id
+        )
+        self._json_execution_source = JsonExecutionSource(json_config, setup_json_url)
+        self._firestore_execution_source = FirestoreExecutionSource(
+            setup_firestore_collection
+        )
+        self._show_code_lines_in_log = show_code_lines_in_log
 
-  def _do_count(self):
-    if self._setup_sheet_id.get():
-      logging.getLogger("megalista").info("Using Sheets count")
-      return self._sheets_execution_source._do_count()
-    elif self._setup_firestore_collection.get():
-      logging.getLogger("megalista").info("Using Firestore count")
-      return self._firestore_execution_source._do_count()
-    elif self._setup_json_url.get():
-      logging.getLogger("megalista").info("Using JSON count")
-      return self._json_execution_source._do_count()
-    else:
-      raise ValueError("Configuration file/sheet not informed. Please check and run Megalista again.")
+    def _do_count(self):
+        if self._setup_sheet_id.get():
+            logging.getLogger("megalista").info("Using Sheets count")
+            return self._sheets_execution_source._do_count()
+        elif self._setup_firestore_collection.get():
+            logging.getLogger("megalista").info("Using Firestore count")
+            return self._firestore_execution_source._do_count()
+        elif self._setup_json_url.get():
+            logging.getLogger("megalista").info("Using JSON count")
+            return self._json_execution_source._do_count()
+        else:
+            raise ValueError(
+                "Configuration file/sheet not informed. Please check and run Megalista again."
+            )
 
-  def read(self, range_tracker):
-    # config logging. has to be done inside a processing step due to Dataflow, since it removes
-    # all log handlers in the beginning of the pipeline
-    LoggingConfig.config_logging(self._show_code_lines_in_log.get())
-    logging.getLogger("megalista").info(f"MEGALISTA build {MEGALISTA_VERSION}: Init.")
-    
-    if self._setup_sheet_id.get():
-      logging.getLogger("megalista").info("Reading Sheets configuration")
-      return self._sheets_execution_source.read(range_tracker)
-    elif self._setup_firestore_collection.get():
-      logging.getLogger("megalista").info("Reading Firestore configuration")
-      return self._firestore_execution_source.read(range_tracker)
-    else:
-      logging.getLogger("megalista").info("Reading JSON configuration")
-      return self._json_execution_source.read(range_tracker)
-      
+    def read(self, range_tracker):
+        # config logging. has to be done inside a processing step due to Dataflow, since it removes
+        # all log handlers in the beginning of the pipeline
+        LoggingConfig.config_logging(self._show_code_lines_in_log.get())
+        logging.getLogger("megalista").info(
+            f"MEGALISTA build {MEGALISTA_VERSION}: Init."
+        )
+
+        if self._setup_sheet_id.get():
+            logging.getLogger("megalista").info("Reading Sheets configuration")
+            return self._sheets_execution_source.read(range_tracker)
+        elif self._setup_firestore_collection.get():
+            logging.getLogger("megalista").info("Reading Firestore configuration")
+            return self._firestore_execution_source.read(range_tracker)
+        else:
+            logging.getLogger("megalista").info("Reading JSON configuration")
+            return self._json_execution_source.read(range_tracker)

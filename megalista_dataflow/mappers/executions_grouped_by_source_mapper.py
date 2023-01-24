@@ -20,26 +20,27 @@ from models.execution import ExecutionsGroupedBySource
 import apache_beam as beam
 
 
-class ExecutionsGroupedBySourceMapper():
+class ExecutionsGroupedBySourceMapper:
     def __init__(self):
         self.logger = logging.getLogger("megalista.ExecutionsGroupedBySourceMapper")
 
     def encapsulate(self, element):
         return ExecutionsGroupedBySource(element[0], element[1])
 
+
 class ExecutionsGroupedBySourceCombineFn(beam.CombineFn):
-  def create_accumulator(self):
-    return []
+    def create_accumulator(self):
+        return []
 
-  def add_input(self, accumulator, input):
-    accumulator.append(input)
-    return accumulator
+    def add_input(self, accumulator, input):
+        accumulator.append(input)
+        return accumulator
 
-  def merge_accumulators(self, accumulators):
-    result = []
-    for acc in accumulators:
-        result = result + acc
-    return result
+    def merge_accumulators(self, accumulators):
+        result = []
+        for acc in accumulators:
+            result = result + acc
+        return result
 
-  def extract_output(self, accumulator):
-    return accumulator
+    def extract_output(self, accumulator):
+        return accumulator

@@ -20,8 +20,7 @@ from mappers.abstract_list_pii_hashing_mapper import ListPIIHashingMapper
 
 class AdsUserListPIIHashingMapper(ListPIIHashingMapper):
     def __init__(self):
-        self.logger = logging.getLogger(
-            "megalista.AdsUserListPIIHashingMapper")
+        self.logger = logging.getLogger("megalista.AdsUserListPIIHashingMapper")
 
     def _hash_user(self, user, hasher):
         hashable_keys = self._get_default_hasheable_keys()
@@ -34,8 +33,7 @@ class AdsUserListPIIHashingMapper(ListPIIHashingMapper):
         try:
             if self._is_data_present(user, "email"):
                 processed_email = self.normalize_email(user["email"])
-                processed_user["hashed_email"] = hasher.hash_field(
-                    processed_email)
+                processed_user["hashed_email"] = hasher.hash_field(processed_email)
         except:
             self.logger.error(f"Error hashing email for user: {str(user)}")
 
@@ -61,8 +59,7 @@ class AdsUserListPIIHashingMapper(ListPIIHashingMapper):
 
         try:
             if self._is_data_present(user, "phone"):
-                processed_user["hashed_phone_number"] = hasher.hash_field(
-                    user["phone"])
+                processed_user["hashed_phone_number"] = hasher.hash_field(user["phone"])
         except:
             self.logger.error(f"Error hashing phone for user: {str(user)}")
 
@@ -72,7 +69,8 @@ class AdsUserListPIIHashingMapper(ListPIIHashingMapper):
         try:
             if self._is_data_present(user, "user_id"):
                 processed_user["third_party_user_id"] = hasher.hash_field(
-                    user["user_id"])
+                    user["user_id"]
+                )
         except:
             self.logger.error(f"Error hashing user_id for user: {str(user)}")
 

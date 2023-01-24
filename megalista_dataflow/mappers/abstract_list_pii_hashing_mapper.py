@@ -33,8 +33,7 @@ class FieldHasher:
 
 class ListPIIHashingMapper:
     def __init__(self):
-        self.logger = logging.getLogger(
-            "megalista.AbstractListPIIHashingMapper")
+        self.logger = logging.getLogger("megalista.AbstractListPIIHashingMapper")
 
     def _get_default_hasheable_keys(self):
         return (
@@ -72,19 +71,17 @@ class ListPIIHashingMapper:
         field_hasher = FieldHasher(should_hash_fields)
 
         hashed_elements = [
-            self._hash_user(element, field_hasher)
-            for element in batch.elements
+            self._hash_user(element, field_hasher) for element in batch.elements
         ]
 
         return Batch(
-            batch.execution, 
+            batch.execution,
             [element for element in hashed_elements if element],
-            batch.iteration
+            batch.iteration,
         )
-    
+
     def _hash_user(self, user, hasher):
         raise NotImplementedError("PII Hashing mapper not implemented.")
-
 
     def normalize_email(self, email_address):
         """Returns the result of normalizing and hashing an email address.

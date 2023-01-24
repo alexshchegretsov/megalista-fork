@@ -33,8 +33,7 @@ class DVUserListPIIHashingMapper(ListPIIHashingMapper):
         try:
             if self._is_data_present(user, "email"):
                 processed_email = self.normalize_email(user["email"])
-                processed_user["hashedEmails"] = hasher.hash_field(
-                    processed_email)
+                processed_user["hashedEmails"] = hasher.hash_field(processed_email)
         except:
             self.logger.error(f"Error hashing email for user: {str(user)}")
 
@@ -46,9 +45,11 @@ class DVUserListPIIHashingMapper(ListPIIHashingMapper):
                 and self._is_data_present(user, "mailing_address_zip")
             ):
                 processed_user["hashedFirstName"] = hasher.hash_field(
-                    user["mailing_address_first_name"])
+                    user["mailing_address_first_name"]
+                )
                 processed_user["hashedLastName"] = hasher.hash_field(
-                    user["mailing_address_last_name"])
+                    user["mailing_address_last_name"]
+                )
                 processed_user["countryCode"] = user["mailing_address_country"]
                 processed_user["zipCodes"] = user["mailing_address_zip"]
 
@@ -57,8 +58,7 @@ class DVUserListPIIHashingMapper(ListPIIHashingMapper):
 
         try:
             if self._is_data_present(user, "phone"):
-                processed_user["hashedPhoneNumbers"] = hasher.hash_field(
-                    user["phone"])
+                processed_user["hashedPhoneNumbers"] = hasher.hash_field(user["phone"])
         except:
             self.logger.error(f"Error hashing phone for user: {str(user)}")
 

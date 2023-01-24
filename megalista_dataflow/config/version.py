@@ -13,4 +13,4 @@
 # limitations under the License.
 
 # Megalista version TBD during deployment (deployment/deploy_cloud.sh)
-MEGALISTA_VERSION = '[megalista_version]'
+MEGALISTA_VERSION = "[megalista_version]"

@@ -37,7 +37,7 @@ class DestinationType(Enum):
         DV_CUSTOMER_MATCH_CONTACT_INFO_UPLOAD,
         DV_CUSTOMER_MATCH_DEVICE_ID_UPLOAD,
         UPLOADED_UUID,  # schema verification purposes
-        UPLOADED_GCLID_TIME  # schema verification purposes
+        UPLOADED_GCLID_TIME,  # schema verification purposes
     ) = range(18)
 
     def __eq__(self, other):
@@ -52,11 +52,12 @@ class SourceType(Enum):
 
 class TransactionalType(Enum):
     """
-        Distinct types to handle data uploading deduplication.
-        NOT_TRANSACTION: don't handle.
-        UUID: Expect a 'uuid' field in the source table as a unique identifier to each row.
-        GCLID_DATE_TIME: Expect 'gclid' and 'time' fields in the source table as unique identifiers to each row.
+    Distinct types to handle data uploading deduplication.
+    NOT_TRANSACTION: don't handle.
+    UUID: Expect a 'uuid' field in the source table as a unique identifier to each row.
+    GCLID_DATE_TIME: Expect 'gclid' and 'time' fields in the source table as unique identifiers to each row.
     """
+
     (
         NOT_TRANSACTIONAL,
         UUID,
@@ -101,21 +102,21 @@ class AccountConfig:
 
     def to_dict(self):
         return {
-            'google_ads_account_id': self.google_ads_account_id,
-            'mcc': self.mcc,
-            'google_analytics_account_id': self.google_analytics_account_id,
-            'campaign_manager_profile_id': self.campaign_manager_profile_id,
-            'app_id': self.app_id,
+            "google_ads_account_id": self.google_ads_account_id,
+            "mcc": self.mcc,
+            "google_analytics_account_id": self.google_analytics_account_id,
+            "campaign_manager_profile_id": self.campaign_manager_profile_id,
+            "app_id": self.app_id,
         }
 
     @staticmethod
     def from_dict(dict_account_config):
         return AccountConfig(
-            dict_account_config['google_ads_account_id'],
-            dict_account_config['mcc'],
-            dict_account_config['google_analytics_account_id'],
-            dict_account_config['campaign_manager_profile_id'],
-            dict_account_config['app_id'],
+            dict_account_config["google_ads_account_id"],
+            dict_account_config["mcc"],
+            dict_account_config["google_analytics_account_id"],
+            dict_account_config["campaign_manager_profile_id"],
+            dict_account_config["app_id"],
         )
 
     def __str__(self) -> str:
@@ -169,17 +170,17 @@ class Source:
 
     def to_dict(self):
         return {
-            'source_name': self.source_name,
-            'source_type': self.source_type.name,
-            'source_metadata': self.source_metadata,
+            "source_name": self.source_name,
+            "source_type": self.source_type.name,
+            "source_metadata": self.source_metadata,
         }
 
     @staticmethod
     def from_dict(dict_source):
         return Source(
-            dict_source['source_name'],
-            SourceType[dict_source['source_type']],
-            dict_source['source_metadata']
+            dict_source["source_name"],
+            SourceType[dict_source["source_type"]],
+            dict_source["source_metadata"],
         )
 
     def __eq__(self, other):
@@ -225,17 +226,17 @@ class Destination:
 
     def to_dict(self):
         return {
-            'destination_name': self.destination_name,
-            'destination_type': self.destination_type.name,
-            'destination_metadata': self.destination_metadata,
+            "destination_name": self.destination_name,
+            "destination_type": self.destination_type.name,
+            "destination_metadata": self.destination_metadata,
         }
 
     @staticmethod
     def from_dict(dict_destination):
         return Destination(
-            dict_destination['destination_name'],
-            DestinationType[dict_destination['destination_type']],
-            dict_destination['destination_metadata'],
+            dict_destination["destination_name"],
+            DestinationType[dict_destination["destination_type"]],
+            dict_destination["destination_metadata"],
         )
 
     def __eq__(self, other) -> bool:
@@ -276,17 +277,17 @@ class Execution:
 
     def to_dict(self):
         return {
-            'account_config': self.account_config.to_dict(),
-            'source': self.source.to_dict(),
-            'destination': self.destination.to_dict()
+            "account_config": self.account_config.to_dict(),
+            "source": self.source.to_dict(),
+            "destination": self.destination.to_dict(),
         }
 
     @staticmethod
     def from_dict(dict_execution):
         return Execution(
-            AccountConfig.from_dict(dict_execution['account_config']),
-            Source.from_dict(dict_execution['source']),
-            Destination.from_dict(dict_execution['destination']),
+            AccountConfig.from_dict(dict_execution["account_config"]),
+            Source.from_dict(dict_execution["source"]),
+            Destination.from_dict(dict_execution["destination"]),
         )
 
     def __str__(self):
@@ -306,11 +307,7 @@ class Execution:
 
 
 class ExecutionsGroupedBySource:
-    def __init__(
-        self,
-        source_name: str,
-        executions: List[Execution]
-    ):
+    def __init__(self, source_name: str, executions: List[Execution]):
         self._source_name = source_name
         self._executions = executions
 
@@ -335,20 +332,18 @@ class ExecutionsGroupedBySource:
 
     def to_dict(self):
         executions_json = [exec.to_dict() for exec in self.executions]
-        return {
-            'source_name': self._source_name,
-            'executions': executions_json
-        }
+        return {"source_name": self._source_name, "executions": executions_json}
 
     @staticmethod
     def from_dict(dict_executions):
-        executions = list([Execution.from_dict(exec_json)
-                          for exec_json in dict_executions['executions']])
-
-        return ExecutionsGroupedBySource(
-            dict_executions['source_name'],
-            executions
+        executions = list(
+            [
+                Execution.from_dict(exec_json)
+                for exec_json in dict_executions["executions"]
+            ]
         )
+
+        return ExecutionsGroupedBySource(dict_executions["source_name"], executions)
 
     def __str__(self):
         return f"Source: {self._source_name}. Executions: {','.join(['(' + str(exec) + ')' for exec in self._executions])}"
@@ -367,11 +362,7 @@ class DataRow(Dict[str, Any]):
 
 
 class DataRowsGroupedBySource:
-    def __init__(
-        self,
-        executions: ExecutionsGroupedBySource,
-        rows: List[DataRow]
-    ):
+    def __init__(self, executions: ExecutionsGroupedBySource, rows: List[DataRow]):
         self._executions = executions
         self._rows = rows
 
@@ -396,16 +387,12 @@ class DataRowsGroupedBySource:
         return self._executions.destinations
 
     def to_dict(self):
-        return {
-            'rows': self._rows,
-            'executions': self._executions.to_dict()
-        }
+        return {"rows": self._rows, "executions": self._executions.to_dict()}
 
     @staticmethod
     def from_dict(dict_rows):
         return DataRowsGroupedBySource(
-            ExecutionsGroupedBySource.from_dict(dict_rows.executions),
-            dict_rows.rows
+            ExecutionsGroupedBySource.from_dict(dict_rows.executions), dict_rows.rows
         )
 
     def __str__(self):
@@ -456,11 +443,7 @@ class Batch:
 
 
 class BatchesGroupedBySource:
-    def __init__(
-        self,
-        source_name: str,
-        batches: List[Batch]
-    ):
+    def __init__(self, source_name: str, batches: List[Batch]):
         self._source_name = source_name
         self._batches = batches
 

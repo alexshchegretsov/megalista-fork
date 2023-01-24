@@ -14,38 +14,39 @@
 from typing import Dict, Any, List
 
 from uploaders import utils
-from uploaders.google_ads.customer_match.abstract_uploader import GoogleAdsCustomerMatchAbstractUploaderDoFn
+from uploaders.google_ads.customer_match.abstract_uploader import (
+    GoogleAdsCustomerMatchAbstractUploaderDoFn,
+)
 from models.execution import DestinationType, AccountConfig
 
 
 class GoogleAdsCustomerMatchUserIdUploaderDoFn(
-    GoogleAdsCustomerMatchAbstractUploaderDoFn):
+    GoogleAdsCustomerMatchAbstractUploaderDoFn
+):
+    def get_list_definition(
+        self, account_config: AccountConfig, destination_metadata: List[str]
+    ) -> Dict[str, Any]:
+        list_name = destination_metadata[0]
+        # Defines the list's lifespan to unlimited
+        life_span = 10000
 
-  def get_list_definition(
-      self,
-      account_config: AccountConfig,
-      destination_metadata: List[str]) -> Dict[str, Any]:
-    list_name = destination_metadata[0]
-    # Defines the list's lifespan to unlimited
-    life_span = 10000
-    
-    # Overwrites lifespan value if any
-    if len(destination_metadata) >=6 and destination_metadata[5]:
-        life_span = int(destination_metadata[5])
+        # Overwrites lifespan value if any
+        if len(destination_metadata) >= 6 and destination_metadata[5]:
+            life_span = int(destination_metadata[5])
 
-    return {
-      'membership_status': 'OPEN',
-      'name': list_name,
-      'description': 'List created automatically by Megalista',
-      'membership_life_span': life_span,
-      'crm_based_user_list': {
-        'upload_key_type': 'CRM_ID',
-        'data_source_type': 'FIRST_PARTY',
-      }
-    }
+        return {
+            "membership_status": "OPEN",
+            "name": list_name,
+            "description": "List created automatically by Megalista",
+            "membership_life_span": life_span,
+            "crm_based_user_list": {
+                "upload_key_type": "CRM_ID",
+                "data_source_type": "FIRST_PARTY",
+            },
+        }
 
-  def get_row_keys(self) -> List[str]:
-    return ['third_party_user_id']
+    def get_row_keys(self) -> List[str]:
+        return ["third_party_user_id"]
 
-  def get_action_type(self) -> DestinationType:
-    return DestinationType.ADS_CUSTOMER_MATCH_USER_ID_UPLOAD
+    def get_action_type(self) -> DestinationType:
+        return DestinationType.ADS_CUSTOMER_MATCH_USER_ID_UPLOAD

@@ -15,7 +15,11 @@
 import apache_beam as beam
 
 from .megalista_step import MegalistaStep
-from mappers.executions_grouped_by_source_mapper import ExecutionsGroupedBySourceMapper, ExecutionsGroupedBySourceCombineFn
+from mappers.executions_grouped_by_source_mapper import (
+    ExecutionsGroupedBySourceMapper,
+    ExecutionsGroupedBySourceCombineFn,
+)
+
 
 class LoadExecutionsStep(MegalistaStep):
     def __init__(self, params, execution_source):
@@ -23,9 +27,13 @@ class LoadExecutionsStep(MegalistaStep):
         self._execution_source = execution_source
 
     def expand(self, pipeline):
-        return (pipeline 
+        return (
+            pipeline
             | "Read config" >> beam.io.Read(self._execution_source)
-            | "Transform into tuples" >> beam.Map(lambda execution: (execution.source.source_name, execution))
-            | "Group by source name" >> beam.CombinePerKey(ExecutionsGroupedBySourceCombineFn())
-            | "Encapsulate into object" >> beam.Map(ExecutionsGroupedBySourceMapper().encapsulate)
+            | "Transform into tuples"
+            >> beam.Map(lambda execution: (execution.source.source_name, execution))
+            | "Group by source name"
+            >> beam.CombinePerKey(ExecutionsGroupedBySourceCombineFn())
+            | "Encapsulate into object"
+            >> beam.Map(ExecutionsGroupedBySourceMapper().encapsulate)
         )

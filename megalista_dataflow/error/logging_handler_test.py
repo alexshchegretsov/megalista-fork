@@ -19,21 +19,34 @@ import pytest
 from apache_beam.options.value_provider import StaticValueProvider
 
 from error.error_handling import ErrorHandler, Error, GmailNotifier, ErrorNotifier
-from models.execution import DestinationType, Execution, AccountConfig, Source, SourceType, Destination
+from models.execution import (
+    DestinationType,
+    Execution,
+    AccountConfig,
+    Source,
+    SourceType,
+    Destination,
+)
 from models.oauth_credentials import OAuthCredentials
 
+
 def get_log_record_info():
-  return logging.LogRecord("unit_test", logging.INFO, '', 1, 'Message Info', None, None)
+    return logging.LogRecord(
+        "unit_test", logging.INFO, "", 1, "Message Info", None, None
+    )
+
 
 def get_log_record_error():
-  return logging.LogRecord("unit_test", logging.ERROR, '', 1, 'Message Error', None, None)
+    return logging.LogRecord(
+        "unit_test", logging.ERROR, "", 1, "Message Error", None, None
+    )
+
 
 # ErrorHandler tests
 def test_has_errors():
-  handler = LoggingHandler()
-  assert handler.has_errors == False
-  handler.emit(get_log_record_info())
-  assert handler.has_errors == False
-  handler.emit(get_log_record_error())
-  assert handler.has_errors == True
-
+    handler = LoggingHandler()
+    assert handler.has_errors == False
+    handler.emit(get_log_record_info())
+    assert handler.has_errors == False
+    handler.emit(get_log_record_error())
+    assert handler.has_errors == True

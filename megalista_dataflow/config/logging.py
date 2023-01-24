@@ -16,6 +16,7 @@ import logging
 import sys
 from error.logging_handler import LoggingHandler
 
+
 class LoggingConfig:
     @staticmethod
     def config_logging(show_lines: bool = False):
@@ -38,10 +39,10 @@ class LoggingConfig:
             stream_handler.setFormatter(formatter)
 
             logging_handler.setFormatter(formatter)
-        
+
         logging.getLogger().setLevel(logging.ERROR)
         logging.getLogger("megalista").setLevel(logging.INFO)
-    
+
     @staticmethod
     def get_stream_handler():
         return LoggingConfig.get_handler(logging.StreamHandler)
@@ -49,7 +50,6 @@ class LoggingConfig:
     @staticmethod
     def get_file_handler():
         return LoggingConfig.get_handler(logging.FileHandler)
-
 
     @staticmethod
     def get_logging_handler():
@@ -62,5 +62,5 @@ class LoggingConfig:
             if isinstance(handler, type):
                 result_handler = handler
                 break
-        
+
         return result_handler

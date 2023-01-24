@@ -22,23 +22,32 @@ from typing import Optional
 
 import importlib
 
-_LOGGER_NAME = 'megalista.data_sources.DataSource'
+_LOGGER_NAME = "megalista.data_sources.DataSource"
+
 
 class DataSource:
     @staticmethod
-    def get_data_source(executions: ExecutionsGroupedBySource, transactional_type: TransactionalType, dataflow_options: DataflowOptions) -> BaseDataSource:
+    def get_data_source(
+        executions: ExecutionsGroupedBySource,
+        transactional_type: TransactionalType,
+        dataflow_options: DataflowOptions,
+    ) -> BaseDataSource:
         data_source = None
         source_type = executions.source.source_type
         if source_type == SourceType.BIG_QUERY:
-            bq_ops_dataset = ''
-            bq_location:Optional[str] = None
+            bq_ops_dataset = ""
+            bq_location: Optional[str] = None
             if dataflow_options.bq_ops_dataset:
                 bq_ops_dataset = dataflow_options.bq_ops_dataset.get()
             if dataflow_options.bq_location:
                 bq_location = dataflow_options.bq_location.get()
-            return BigQueryDataSource(executions, transactional_type, bq_ops_dataset, bq_location)
+            return BigQueryDataSource(
+                executions, transactional_type, bq_ops_dataset, bq_location
+            )
         elif source_type == SourceType.FILE:
             return FileDataSource(executions, transactional_type, dataflow_options)
         else:
-            raise NotImplementedError("Source Type not implemented. Please check your configuration (sheet / json / firestore).")
+            raise NotImplementedError(
+                "Source Type not implemented. Please check your configuration (sheet / json / firestore)."
+            )
         return data_source

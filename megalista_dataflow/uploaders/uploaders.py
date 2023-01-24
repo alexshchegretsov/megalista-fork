@@ -19,17 +19,17 @@ from models.execution import Execution
 
 
 class MegalistaUploader(beam.DoFn):
-  """
-  General DoFn to be used as supper for DoFn uploaders.
-  Add error notification capabilities.
-  """
+    """
+    General DoFn to be used as supper for DoFn uploaders.
+    Add error notification capabilities.
+    """
 
-  def __init__(self, error_handler: ErrorHandler):
-    super().__init__()
-    self._error_handler = error_handler
+    def __init__(self, error_handler: ErrorHandler):
+        super().__init__()
+        self._error_handler = error_handler
 
-  def _add_error(self, execution: Execution, error_message: str):
-    self._error_handler.add_error(execution, error_message)
+    def _add_error(self, execution: Execution, error_message: str):
+        self._error_handler.add_error(execution, error_message)
 
-  def finish_bundle(self):
-    self._error_handler.notify_errors()
+    def finish_bundle(self):
+        self._error_handler.notify_errors()

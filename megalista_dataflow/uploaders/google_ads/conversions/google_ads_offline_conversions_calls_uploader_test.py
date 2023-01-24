@@ -26,262 +26,305 @@ from models.execution import Execution
 from models.execution import Source
 from models.execution import SourceType
 from models.oauth_credentials import OAuthCredentials
-from uploaders.google_ads.conversions.google_ads_offline_conversions_calls_uploader import GoogleAdsOfflineUploaderCallsDoFn
+from uploaders.google_ads.conversions.google_ads_offline_conversions_calls_uploader import (
+    GoogleAdsOfflineUploaderCallsDoFn,
+)
 
-_account_config = AccountConfig('123-45567-890', False, 'ga_account_id', '', '')
+_account_config = AccountConfig("123-45567-890", False, "ga_account_id", "", "")
 
 
 @pytest.fixture()
 def error_notifier():
-  return MockErrorNotifier()
+    return MockErrorNotifier()
 
 
 @pytest.fixture
 def uploader(mocker, error_notifier):
-  mocker.patch('google.ads.googleads.client.GoogleAdsClient')
-  mocker.patch('google.ads.googleads.oauth2')
-  credential_id = StaticValueProvider(str, 'id')
-  secret = StaticValueProvider(str, 'secret')
-  access = StaticValueProvider(str, 'access')
-  refresh = StaticValueProvider(str, 'refresh')
-  credentials = OAuthCredentials(credential_id, secret, access, refresh)
-  return GoogleAdsOfflineUploaderCallsDoFn(credentials,
-                                          StaticValueProvider(str, 'devtoken'),
-                                          ErrorHandler(DestinationType.ADS_OFFLINE_CONVERSION_CALLS, error_notifier))
+    mocker.patch("google.ads.googleads.client.GoogleAdsClient")
+    mocker.patch("google.ads.googleads.oauth2")
+    credential_id = StaticValueProvider(str, "id")
+    secret = StaticValueProvider(str, "secret")
+    access = StaticValueProvider(str, "access")
+    refresh = StaticValueProvider(str, "refresh")
+    credentials = OAuthCredentials(credential_id, secret, access, refresh)
+    return GoogleAdsOfflineUploaderCallsDoFn(
+        credentials,
+        StaticValueProvider(str, "devtoken"),
+        ErrorHandler(DestinationType.ADS_OFFLINE_CONVERSION_CALLS, error_notifier),
+    )
 
 
 def test_get_service(mocker, uploader):
-  assert uploader._get_oc_service(mocker.ANY) is not None
+    assert uploader._get_oc_service(mocker.ANY) is not None
 
 
-def arrange_conversion_resource_name_api_call(mocker, uploader, conversion_resource_name):
-  mocker.patch.object(uploader, '_get_ads_service')
+def arrange_conversion_resource_name_api_call(
+    mocker, uploader, conversion_resource_name
+):
+    mocker.patch.object(uploader, "_get_ads_service")
 
-  resource_name_result = MagicMock()
-  resource_name_result.conversion_action.resource_name = conversion_resource_name
+    resource_name_result = MagicMock()
+    resource_name_result.conversion_action.resource_name = conversion_resource_name
 
-  resource_name_batch_response = MagicMock()
-  resource_name_batch_response.results = [resource_name_result]
+    resource_name_batch_response = MagicMock()
+    resource_name_batch_response.results = [resource_name_result]
 
-  uploader._get_ads_service.return_value.search_stream.return_value = [resource_name_batch_response]
+    uploader._get_ads_service.return_value.search_stream.return_value = [
+        resource_name_batch_response
+    ]
 
 
 def test_conversion_upload(mocker, uploader):
-  # arrange
-  conversion_resource_name = 'user_list_resouce'
-  arrange_conversion_resource_name_api_call(mocker, uploader, conversion_resource_name)
+    # arrange
+    conversion_resource_name = "user_list_resouce"
+    arrange_conversion_resource_name_api_call(
+        mocker, uploader, conversion_resource_name
+    )
 
-  mocker.patch.object(uploader, '_get_oc_service')
-  conversion_name = 'user_list'
-  destination = Destination(
-    'dest1', DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ['user_list'])
-  source = Source('orig1', SourceType.BIG_QUERY, ['dt1', 'buyers'])
-  execution = Execution(_account_config, source, destination)
+    mocker.patch.object(uploader, "_get_oc_service")
+    conversion_name = "user_list"
+    destination = Destination(
+        "dest1", DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ["user_list"]
+    )
+    source = Source("orig1", SourceType.BIG_QUERY, ["dt1", "buyers"])
+    execution = Execution(_account_config, source, destination)
 
-  time1 = '2020-04-09T14:13:55.0005'
-  time1_result = '2020-04-09 14:13:55-03:00'
+    time1 = "2020-04-09T14:13:55.0005"
+    time1_result = "2020-04-09 14:13:55-03:00"
 
-  call_time1 = '2020-04-08T14:13:55.0005'
-  call_time1_result = '2020-04-08 14:13:55-03:00'
+    call_time1 = "2020-04-08T14:13:55.0005"
+    call_time1_result = "2020-04-08 14:13:55-03:00"
 
-  time2 = '2020-04-09T13:13:55.0005'
-  time2_result = '2020-04-09 13:13:55-03:00'
+    time2 = "2020-04-09T13:13:55.0005"
+    time2_result = "2020-04-09 13:13:55-03:00"
 
-  call_time2 = '2020-04-08T13:13:55.0005'
-  call_time2_result = '2020-04-08 13:13:55-03:00'
+    call_time2 = "2020-04-08T13:13:55.0005"
+    call_time2_result = "2020-04-08 13:13:55-03:00"
 
-  element1 = {
-    'time': time1,
-    'call_time': call_time1,
-    'amount': '123',
-    'caller_id': '+5511987654321'
-  }
-  element2 = {
-    'time': time2,
-    'call_time': call_time2,
-    'amount': '234',
-    'caller_id': '+5511987654321'
-  }
+    element1 = {
+        "time": time1,
+        "call_time": call_time1,
+        "amount": "123",
+        "caller_id": "+5511987654321",
+    }
+    element2 = {
+        "time": time2,
+        "call_time": call_time2,
+        "amount": "234",
+        "caller_id": "+5511987654321",
+    }
 
-  batch = Batch(execution, [element1, element2])
+    batch = Batch(execution, [element1, element2])
 
-  # act
-  uploader.process(batch)
-  uploader.finish_bundle()
+    # act
+    uploader.process(batch)
+    uploader.finish_bundle()
 
-  uploader._get_ads_service.return_value.search_stream.assert_called_once_with(
-    customer_id='12345567890',
-    query=f"SELECT conversion_action.resource_name FROM conversion_action WHERE conversion_action.name = '{conversion_name}'"
-  )
+    uploader._get_ads_service.return_value.search_stream.assert_called_once_with(
+        customer_id="12345567890",
+        query=f"SELECT conversion_action.resource_name FROM conversion_action WHERE conversion_action.name = '{conversion_name}'",
+    )
 
-  uploader._get_oc_service.return_value.upload_call_conversions.assert_called_once_with(request={
-    'customer_id': '12345567890',
-    'partial_failure': True,
-    'validate_only': False,
-    'conversions': [{
-      'conversion_action': conversion_resource_name,
-      'call_start_date_time': call_time1_result,
-      'conversion_date_time': time1_result,
-      'conversion_value': 123,
-      'caller_id': '+5511987654321'
-    }, {
-      'conversion_action': conversion_resource_name,
-      'call_start_date_time': call_time2_result,
-      'conversion_date_time': time2_result,
-      'conversion_value': 234,
-      'caller_id': '+5511987654321'
-    }]
-  })
+    uploader._get_oc_service.return_value.upload_call_conversions.assert_called_once_with(
+        request={
+            "customer_id": "12345567890",
+            "partial_failure": True,
+            "validate_only": False,
+            "conversions": [
+                {
+                    "conversion_action": conversion_resource_name,
+                    "call_start_date_time": call_time1_result,
+                    "conversion_date_time": time1_result,
+                    "conversion_value": 123,
+                    "caller_id": "+5511987654321",
+                },
+                {
+                    "conversion_action": conversion_resource_name,
+                    "call_start_date_time": call_time2_result,
+                    "conversion_date_time": time2_result,
+                    "conversion_value": 234,
+                    "caller_id": "+5511987654321",
+                },
+            ],
+        }
+    )
+
 
 def test_upload_with_ads_account_override(mocker, uploader):
-  # arrange
-  conversion_resource_name = 'user_list_resouce'
-  arrange_conversion_resource_name_api_call(mocker, uploader, conversion_resource_name)
+    # arrange
+    conversion_resource_name = "user_list_resouce"
+    arrange_conversion_resource_name_api_call(
+        mocker, uploader, conversion_resource_name
+    )
 
-  mocker.patch.object(uploader, '_get_oc_service')
-  conversion_name = 'user_list'
-  destination = Destination(
-    'dest1', DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ['user_list', '987-7654-123'])
-  source = Source('orig1', SourceType.BIG_QUERY, ['dt1', 'buyers'])
-  execution = Execution(_account_config, source, destination)
+    mocker.patch.object(uploader, "_get_oc_service")
+    conversion_name = "user_list"
+    destination = Destination(
+        "dest1",
+        DestinationType.ADS_OFFLINE_CONVERSION_CALLS,
+        ["user_list", "987-7654-123"],
+    )
+    source = Source("orig1", SourceType.BIG_QUERY, ["dt1", "buyers"])
+    execution = Execution(_account_config, source, destination)
 
-  time1 = '2020-04-09T14:13:55.0005'
-  time1_result = '2020-04-09 14:13:55-03:00'
+    time1 = "2020-04-09T14:13:55.0005"
+    time1_result = "2020-04-09 14:13:55-03:00"
 
-  call_time1 = '2020-04-08T14:13:55.0005'
-  call_time1_result = '2020-04-08 14:13:55-03:00'
+    call_time1 = "2020-04-08T14:13:55.0005"
+    call_time1_result = "2020-04-08 14:13:55-03:00"
 
-  time2 = '2020-04-09T13:13:55.0005'
-  time2_result = '2020-04-09 13:13:55-03:00'
+    time2 = "2020-04-09T13:13:55.0005"
+    time2_result = "2020-04-09 13:13:55-03:00"
 
-  call_time2 = '2020-04-08T13:13:55.0005'
-  call_time2_result = '2020-04-08 13:13:55-03:00'
+    call_time2 = "2020-04-08T13:13:55.0005"
+    call_time2_result = "2020-04-08 13:13:55-03:00"
 
-  element1 = {
-    'time': time1,
-    'call_time': call_time1,
-    'amount': '123',
-    'caller_id': '+5511987654321'
-  }
-  element2 = {
-    'time': time2,
-    'call_time': call_time2,
-    'amount': '234',
-    'caller_id': '+5511987654321'
-  }
+    element1 = {
+        "time": time1,
+        "call_time": call_time1,
+        "amount": "123",
+        "caller_id": "+5511987654321",
+    }
+    element2 = {
+        "time": time2,
+        "call_time": call_time2,
+        "amount": "234",
+        "caller_id": "+5511987654321",
+    }
 
-  batch = Batch(execution, [element1, element2])
+    batch = Batch(execution, [element1, element2])
 
-  # act
-  uploader.process(batch)
-  uploader.finish_bundle()
+    # act
+    uploader.process(batch)
+    uploader.finish_bundle()
 
-  # assert
-  uploader._get_ads_service.return_value.search_stream.assert_called_once_with(
-    customer_id='9877654123',
-    query=f"SELECT conversion_action.resource_name FROM conversion_action WHERE conversion_action.name = '{conversion_name}'"
-  )
+    # assert
+    uploader._get_ads_service.return_value.search_stream.assert_called_once_with(
+        customer_id="9877654123",
+        query=f"SELECT conversion_action.resource_name FROM conversion_action WHERE conversion_action.name = '{conversion_name}'",
+    )
 
-  uploader._get_oc_service.return_value.upload_call_conversions.assert_called_once_with(request={
-    'customer_id': '9877654123',
-    'partial_failure': True,
-    'validate_only': False,
-    'conversions': [{
-      'conversion_action': conversion_resource_name,
-      'call_start_date_time': call_time1_result,
-      'conversion_date_time': time1_result,
-      'conversion_value': 123,
-      'caller_id': '+5511987654321'
-    }, {
-      'conversion_action': conversion_resource_name,
-      'call_start_date_time': call_time2_result,
-      'conversion_date_time': time2_result,
-      'conversion_value': 234,
-      'caller_id': '+5511987654321'
-    }]
-  })
+    uploader._get_oc_service.return_value.upload_call_conversions.assert_called_once_with(
+        request={
+            "customer_id": "9877654123",
+            "partial_failure": True,
+            "validate_only": False,
+            "conversions": [
+                {
+                    "conversion_action": conversion_resource_name,
+                    "call_start_date_time": call_time1_result,
+                    "conversion_date_time": time1_result,
+                    "conversion_value": 123,
+                    "caller_id": "+5511987654321",
+                },
+                {
+                    "conversion_action": conversion_resource_name,
+                    "call_start_date_time": call_time2_result,
+                    "conversion_date_time": time2_result,
+                    "conversion_value": 234,
+                    "caller_id": "+5511987654321",
+                },
+            ],
+        }
+    )
 
 
-def test_should_not_notify_errors_when_api_call_is_successful(mocker, uploader, error_notifier):
-  # arrange
-  conversion_resource_name = 'user_list_resouce'
-  arrange_conversion_resource_name_api_call(mocker, uploader, conversion_resource_name)
+def test_should_not_notify_errors_when_api_call_is_successful(
+    mocker, uploader, error_notifier
+):
+    # arrange
+    conversion_resource_name = "user_list_resouce"
+    arrange_conversion_resource_name_api_call(
+        mocker, uploader, conversion_resource_name
+    )
 
-  mocker.patch.object(uploader, '_get_oc_service')
-  conversion_name = 'user_list'
-  destination = Destination(
-    'dest1', DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ['user_list'])
-  source = Source('orig1', SourceType.BIG_QUERY, ['dt1', 'buyers'])
-  execution = Execution(_account_config, source, destination)
+    mocker.patch.object(uploader, "_get_oc_service")
+    conversion_name = "user_list"
+    destination = Destination(
+        "dest1", DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ["user_list"]
+    )
+    source = Source("orig1", SourceType.BIG_QUERY, ["dt1", "buyers"])
+    execution = Execution(_account_config, source, destination)
 
-  time1 = '2020-04-09T14:13:55.0005'
-  
-  call_time1 = '2020-04-08T14:13:55.0005'
-  
-  element1 = {
-    'time': time1,
-    'call_time': call_time1,
-    'amount': '123',
-    'caller_id': '+5511987654321'
-  }
-  batch = Batch(execution, [element1])
+    time1 = "2020-04-09T14:13:55.0005"
 
-  result_mock1 = MagicMock()
+    call_time1 = "2020-04-08T14:13:55.0005"
 
-  upload_return_mock = MagicMock()
-  upload_return_mock.results = [result_mock1]
-  upload_return_mock.partial_failure_error = None
+    element1 = {
+        "time": time1,
+        "call_time": call_time1,
+        "amount": "123",
+        "caller_id": "+5511987654321",
+    }
+    batch = Batch(execution, [element1])
 
-  uploader._get_oc_service.return_value.upload_call_conversions.return_value = upload_return_mock
+    result_mock1 = MagicMock()
 
-  # act
-  uploader.process(batch)
-  uploader.finish_bundle()
+    upload_return_mock = MagicMock()
+    upload_return_mock.results = [result_mock1]
+    upload_return_mock.partial_failure_error = None
 
-  uploader._get_ads_service.return_value.search_stream.assert_called_once_with(
-    customer_id='12345567890',
-    query=f"SELECT conversion_action.resource_name FROM conversion_action WHERE conversion_action.name = '{conversion_name}'"
-  )
+    uploader._get_oc_service.return_value.upload_call_conversions.return_value = (
+        upload_return_mock
+    )
 
-  assert error_notifier.were_errors_sent is False
+    # act
+    uploader.process(batch)
+    uploader.finish_bundle()
+
+    uploader._get_ads_service.return_value.search_stream.assert_called_once_with(
+        customer_id="12345567890",
+        query=f"SELECT conversion_action.resource_name FROM conversion_action WHERE conversion_action.name = '{conversion_name}'",
+    )
+
+    assert error_notifier.were_errors_sent is False
 
 
 def test_error_notification(mocker, uploader, error_notifier):
-  # arrange
-  conversion_resource_name = 'user_list_resouce'
-  arrange_conversion_resource_name_api_call(mocker, uploader, conversion_resource_name)
+    # arrange
+    conversion_resource_name = "user_list_resouce"
+    arrange_conversion_resource_name_api_call(
+        mocker, uploader, conversion_resource_name
+    )
 
-  mocker.patch.object(uploader, '_get_oc_service')
-  destination = Destination(
-    'dest1', DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ['user_list'])
-  source = Source('orig1', SourceType.BIG_QUERY, ['dt1', 'buyers'])
-  execution = Execution(_account_config, source, destination)
+    mocker.patch.object(uploader, "_get_oc_service")
+    destination = Destination(
+        "dest1", DestinationType.ADS_OFFLINE_CONVERSION_CALLS, ["user_list"]
+    )
+    source = Source("orig1", SourceType.BIG_QUERY, ["dt1", "buyers"])
+    execution = Execution(_account_config, source, destination)
 
-  time1 = '2020-04-09T14:13:55.0005'
-  
-  call_time1 = '2020-04-08T14:13:55.0005'
-  
-  element1 = {
-    'time': time1,
-    'call_time': call_time1,
-    'amount': '123',
-    'caller_id': '+5511987654321'
-  }
-  batch = Batch(execution, [element1])
+    time1 = "2020-04-09T14:13:55.0005"
 
-  error_message = 'Offline Conversion uploading failures'
-  upload_return_mock = MagicMock()
-  upload_return_mock.partial_failure_error.message = error_message
-  uploader._get_oc_service.return_value.upload_call_conversions.return_value = upload_return_mock
+    call_time1 = "2020-04-08T14:13:55.0005"
 
-  # act
-  uploader.process(batch)
-  uploader.finish_bundle()
+    element1 = {
+        "time": time1,
+        "call_time": call_time1,
+        "amount": "123",
+        "caller_id": "+5511987654321",
+    }
+    batch = Batch(execution, [element1])
 
-  # assert
-  assert error_notifier.were_errors_sent is True
-  assert error_notifier.destination_type is DestinationType.ADS_OFFLINE_CONVERSION_CALLS
-  assert error_notifier.errors_sent == {execution: f'Error on uploading offline conversions (calls): {error_message}.'}
+    error_message = "Offline Conversion uploading failures"
+    upload_return_mock = MagicMock()
+    upload_return_mock.partial_failure_error.message = error_message
+    uploader._get_oc_service.return_value.upload_call_conversions.return_value = (
+        upload_return_mock
+    )
+
+    # act
+    uploader.process(batch)
+    uploader.finish_bundle()
+
+    # assert
+    assert error_notifier.were_errors_sent is True
+    assert (
+        error_notifier.destination_type is DestinationType.ADS_OFFLINE_CONVERSION_CALLS
+    )
+    assert error_notifier.errors_sent == {
+        execution: f"Error on uploading offline conversions (calls): {error_message}."
+    }
 
 
 # def test_conversion_upload_and_error_notification(mocker, uploader, error_notifier):

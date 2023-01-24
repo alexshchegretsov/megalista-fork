@@ -16,8 +16,11 @@ import apache_beam as beam
 
 from error.error_handling import ErrorNotifier
 
-class MegalistaStepParams():
-    def __init__(self, oauth_credentials, dataflow_options, error_notifier: ErrorNotifier):
+
+class MegalistaStepParams:
+    def __init__(
+        self, oauth_credentials, dataflow_options, error_notifier: ErrorNotifier
+    ):
         self._oauth_credentials = oauth_credentials
         self._dataflow_options = dataflow_options
         self._error_notifier = error_notifier

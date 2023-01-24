@@ -28,13 +28,16 @@ from uploaders import utils
 from uploaders.display_video import DV_API_VERSION
 from uploaders.uploaders import MegalistaUploader
 
-_DEFAULT_LOGGER: str = 'megalista.DisplayVideoCustomerMatchAbstractUploader'
+_DEFAULT_LOGGER: str = "megalista.DisplayVideoCustomerMatchAbstractUploader"
 
 
 class DisplayVideoCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
-
-    def __init__(self, oauth_credentials: OAuthCredentials, developer_token: StaticValueProvider,
-                 error_handler: ErrorHandler):
+    def __init__(
+        self,
+        oauth_credentials: OAuthCredentials,
+        developer_token: StaticValueProvider,
+        error_handler: ErrorHandler,
+    ):
         super().__init__(error_handler)
         self.oauth_credentials = oauth_credentials
         self.developer_token = developer_token
@@ -47,17 +50,11 @@ class DisplayVideoCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
             refresh_token=self.oauth_credentials.get_refresh_token(),
             client_id=self.oauth_credentials.get_client_id(),
             client_secret=self.oauth_credentials.get_client_secret(),
-            token_uri='https://accounts.google.com/o/oauth2/token',
-            scopes=[
-                'https://www.googleapis.com/auth/display-video'
-            ]
+            token_uri="https://accounts.google.com/o/oauth2/token",
+            scopes=["https://www.googleapis.com/auth/display-video"],
         )
 
-        return build(
-            'displayvideo',
-            DV_API_VERSION,      
-            credentials=credentials
-        )
+        return build("displayvideo", DV_API_VERSION, credentials=credentials)
 
     def _get_dv_audience_service(self):
         return self._get_dv_service().firstAndThirdPartyAudiences()
@@ -68,62 +65,77 @@ class DisplayVideoCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
     def finish_bundle(self):
         super().finish_bundle()
 
-    def _create_list_if_it_does_not_exist(self,
-                                          advertiser_id: str,
-                                          list_name: str,
-                                          list_definition: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def _create_list_if_it_does_not_exist(
+        self, advertiser_id: str, list_name: str, list_definition: Dict[str, Any]
+    ) -> Tuple[bool, Dict[str, Any]]:
         was_audience_created = False
         if self._user_list_id_cache.get(list_name) is None:
-            was_audience_created, self._user_list_id_cache[list_name] = \
-                 self._do_create_list_if_it_does_not_exist(
-                    advertiser_id, list_name, list_definition)
+            (
+                was_audience_created,
+                self._user_list_id_cache[list_name],
+            ) = self._do_create_list_if_it_does_not_exist(
+                advertiser_id, list_name, list_definition
+            )
 
         return was_audience_created, self._user_list_id_cache[list_name]
 
-    def _do_create_list_if_it_does_not_exist(self,
-                                             advertiser_id: str,
-                                             list_name: str,
-                                             list_definition: Dict[str, Any]
-                                             ) -> Tuple[bool, Dict[str, Any]]:
+    def _do_create_list_if_it_does_not_exist(
+        self, advertiser_id: str, list_name: str, list_definition: Dict[str, Any]
+    ) -> Tuple[bool, Dict[str, Any]]:
 
         was_audience_created = False
         found_audience = self._get_advertiser_audience_by_display_name(
-            advertiser_id, list_name)
+            advertiser_id, list_name
+        )
 
         if found_audience is None:
             # Create list
             logging.getLogger(_DEFAULT_LOGGER).info(
-                '%s list does not exist, creating...', list_name)
-            
-            # Marks the newly created audience    
+                "%s list does not exist, creating...", list_name
+            )
+
+            # Marks the newly created audience
             was_audience_created = True
-            
-            found_audience = self._get_dv_audience_service().create(
-                advertiserId=advertiser_id,
-                body=list_definition
-            ).execute()
+
+            found_audience = (
+                self._get_dv_audience_service()
+                .create(advertiserId=advertiser_id, body=list_definition)
+                .execute()
+            )
 
             logging.getLogger(_DEFAULT_LOGGER).info(
-                'List %s created with resource name: %s', list_name, found_audience['displayName'])
+                "List %s created with resource name: %s",
+                list_name,
+                found_audience["displayName"],
+            )
         else:
             logging.getLogger(_DEFAULT_LOGGER).info(
-                'List found with name: %s [%s]', found_audience['displayName'], found_audience['firstAndThirdPartyAudienceId'] )
+                "List found with name: %s [%s]",
+                found_audience["displayName"],
+                found_audience["firstAndThirdPartyAudienceId"],
+            )
 
         return was_audience_created, found_audience
 
-    def _get_advertiser_audience_by_display_name(self, advertiser_id: str, display_name: str) -> Optional[Dict[str, Any]]:
+    def _get_advertiser_audience_by_display_name(
+        self, advertiser_id: str, display_name: str
+    ) -> Optional[Dict[str, Any]]:
         """
-            Gets the advertise's audience by the displayName
+        Gets the advertise's audience by the displayName
         """
-        response = self._get_dv_audience_service().list(
-            advertiserId=advertiser_id,
-            pageSize=1,
-            filter=f'displayName : "{display_name}"'
-        ).execute()
+        response = (
+            self._get_dv_audience_service()
+            .list(
+                advertiserId=advertiser_id,
+                pageSize=1,
+                filter=f'displayName : "{display_name}"',
+            )
+            .execute()
+        )
 
-        if response and response['firstAndThirdPartyAudiences']:
-            return dict(response['firstAndThirdPartyAudiences'][0])
-        else: 
+        if response and response["firstAndThirdPartyAudiences"]:
+            return dict(response["firstAndThirdPartyAudiences"][0])
+        else:
             return None
 
     def _assert_execution_is_valid(self, execution) -> None:
@@ -131,34 +143,42 @@ class DisplayVideoCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
 
         # The number of parameters vary by upload. This test could be parameterized
         if not destination[0]:
-            raise ValueError('Missing destination information. Received {}'.format(
-                str(destination)))
-        
-        elif not destination[1]:
-            raise ValueError('Missing list_name information. Received {}'.format(
-                str(destination)))        
+            raise ValueError(
+                "Missing destination information. Received {}".format(str(destination))
+            )
 
-    def _get_advertiser_id(self, account_config: AccountConfig, destination: Destination) -> str:
+        elif not destination[1]:
+            raise ValueError(
+                "Missing list_name information. Received {}".format(str(destination))
+            )
+
+    def _get_advertiser_id(
+        self, account_config: AccountConfig, destination: Destination
+    ) -> str:
         """
-          Gets the advertiser id that the audience should be sent to
+        Gets the advertiser id that the audience should be sent to
         """
         return destination.destination_metadata[0]
 
-
-    def _get_list_name(self, account_config: AccountConfig, destination: Destination) -> str:
+    def _get_list_name(
+        self, account_config: AccountConfig, destination: Destination
+    ) -> str:
         """
-          Gets the advertiser id that the audience should be sent to
+        Gets the advertiser id that the audience should be sent to
         """
         return destination.destination_metadata[1]
 
-    def get_filtered_rows(self, rows: List[Any], keys: List[str]) -> List[Dict[str, Any]]:
+    def get_filtered_rows(
+        self, rows: List[Any], keys: List[str]
+    ) -> List[Dict[str, Any]]:
         return [{key: row.get(key) for key in keys if key in row} for row in rows]
 
     @utils.safe_process(logger=logging.getLogger(_DEFAULT_LOGGER))
     def process(self, batch: Batch, **kwargs) -> List[Execution]:
         if not self.active:
             logging.getLogger(_DEFAULT_LOGGER).info(
-                'Skipping upload to DV, parameters not configured.')
+                "Skipping upload to DV, parameters not configured."
+            )
             return []
 
         execution = batch.execution
@@ -167,52 +187,56 @@ class DisplayVideoCustomerMatchAbstractUploaderDoFn(MegalistaUploader):
 
         # Gets advertiser_id from Metadata 0
         advertiser_id = self._get_advertiser_id(
-            execution.account_config, execution.destination) 
+            execution.account_config, execution.destination
+        )
 
         # Gets audience name from Metadata 1
-        list_name = self._get_list_name(
-            execution.account_config, execution.destination)  
+        list_name = self._get_list_name(execution.account_config, execution.destination)
 
         # Customer Match element's list (Contact Info/Device)
         rows = self.get_filtered_rows(batch.elements, self.get_row_keys())
 
         # Payload for creating a new list in case there isn't one
         list_definition = self.get_list_definition(
-            execution.account_config,
-            execution.destination.destination_metadata,
-            rows
+            execution.account_config, execution.destination.destination_metadata, rows
         )
 
         # Checks if the audience already exists and returns, or creates a new one
         # If the audience was just created, skips the update for this batch
         was_audience_created, audience = self._create_list_if_it_does_not_exist(
-            advertiser_id,
-            list_name,
-            list_definition
+            advertiser_id, list_name, list_definition
         )
-        
+
         if not was_audience_created:
             # Payload for updating an existing list
             updated_list_definition = self.get_update_list_definition(
                 execution.account_config,
                 execution.destination.destination_metadata,
-                rows
+                rows,
             )
 
             # Updates found/created audience by renewing the customer's membership list
             self._get_dv_audience_service().editCustomerMatchMembers(
-                firstAndThirdPartyAudienceId=audience['firstAndThirdPartyAudienceId'],
-                body=updated_list_definition
+                firstAndThirdPartyAudienceId=audience["firstAndThirdPartyAudienceId"],
+                body=updated_list_definition,
             ).execute()
 
         return [execution]
-        
-    def get_list_definition(self, account_config: AccountConfig,
-                            destination_metadata: List[str], list_to_add: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def get_list_definition(
+        self,
+        account_config: AccountConfig,
+        destination_metadata: List[str],
+        list_to_add: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         pass
 
-    def get_update_list_definition(self, account_config: AccountConfig,
-                                  destination_metadata: List[str], list_to_add: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_update_list_definition(
+        self,
+        account_config: AccountConfig,
+        destination_metadata: List[str],
+        list_to_add: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         pass
 
     def get_row_keys(self) -> List[str]:
